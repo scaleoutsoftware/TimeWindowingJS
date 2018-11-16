@@ -1,0 +1,20 @@
+{
+  "name": "time-windowing",
+  "version": "1.0.0",
+  "description": "Funcitons ot manage and analyze arrays of time-ordered events.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [
+    "window",
+    "sliding",
+    "tumbling",
+    "session"
+  ],
+  "author": "scaleoutsoftware",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "eslint": "^5.9.0"
+  }
+}
