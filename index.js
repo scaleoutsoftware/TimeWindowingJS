@@ -1,5 +1,16 @@
 'use strict';
 
+/**
+ * @callback TimestampSelector
+ * @param {any} element
+ * @returns {Date|number}
+ */
+
+/**
+ * @param {Array} arr - destination array for new element(s).
+ * @param {TimestampSelector} timestampSelector - function to extract a timestamp from an element.
+ * @param {...any} values - value(s) to add to the array.
+ */
 function addToOrdered(arr, timestampSelector, ...values) {
     if (!Array.isArray(arr)) {
         throw new TypeError('arr must be an Array instance');
