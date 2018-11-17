@@ -12,6 +12,13 @@ describe('Array Management Tests', function() {
         assert(arr.length === 1);
     });
 
+    it('should only allow an array', function() {
+        const element = new MyEvent('some value', Date.now());
+        assert.throws(() => tw.addToOrdered(null, (elem) => elem.timestamp, element));
+        assert.throws(() => tw.addToOrdered(undefined, (elem) => elem.timestamp, element));
+        assert.throws(() => tw.addToOrdered('Supposed to be an array.', (elem) => elem.timestamp, element));
+    });
+
 });
 
 
