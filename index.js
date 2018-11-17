@@ -1,6 +1,7 @@
+'use strict';
 
 function addToOrdered(arr, timestampSelector, ...values) {
-    if (!arr.isArray()) {
+    if (!Array.isArray(arr)) {
         throw new TypeError('arr must be an Array instance');
     }
     if (timestampSelector == null) {
