@@ -53,8 +53,11 @@ function addToOrderedAndEvictOldest(arr, maxArraySize, timestampSelector, ...val
     }
 
     addToOrdered(arr, timestampSelector, ...values);
-    
-    
+
+    const removeCount = arr.length - maxArraySize;
+    if (removeCount > 0) {
+        removeFirstItems(arr, removeCount);
+    }
 }
 
 /**
@@ -69,7 +72,18 @@ function addToOrderedAndEvictOldest(arr, maxArraySize, timestampSelector, ...val
 function addToOrderedAndEvictBefore(arr, startTime, timestampSelector, ...values) {
     addToOrdered(arr, timestampSelector, ...values);
     
-    
+    // find index of first element to keep.
+    let removeCount = 0;
+    while (removeCount < arr.length)
+    {
+        if (timestampSelector(arr[removeCount]) < startTime)
+            removeCount++;
+        else
+            break;
+    }
+
+    if (removeCount > 0)
+        removeFirstItems(arr, removeCount);
 }
 
 /**
