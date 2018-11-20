@@ -1,9 +1,10 @@
 'use strict';
 
 /**
+ * User-supplied callback function that extracts a timestamp from an event.
  * @callback TimestampSelector
- * @param {any} element
- * @returns {Date|number}
+ * @param {any} event - Object representing an event.
+ * @returns {Date|number} The time (Date or number) that the event argument occurred.
  */
 
 /**
@@ -16,11 +17,15 @@ function addToOrdered(arr, timestampSelector, ...values) {
         throw new TypeError('arr must be an Array instance');
     }
     if (timestampSelector == null) {
-        throw new TypeError('timestampSelector cannot be null/undefined');
+        throw new TypeError('timestampSelector cannot be null/undefined.');
     }
 
     for (let i = 0; i < values.length; i++) {
         const timestamp = timestampSelector(values[i]);
+        if (timestamp == null) {
+            throw new Error('timestampSelector returned null/undefined.');
+        }
+
         let insertPosition = arr.length;
         while (insertPosition > 0) {
             if (timestamp < timestampSelector(arr[insertPosition - 1]))
