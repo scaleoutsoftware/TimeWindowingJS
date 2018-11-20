@@ -27,10 +27,36 @@ describe('Array Management Tests', function() {
         const jan2 = new MyEvent('event1', new Date(2018, 0, 1));
 
         tw.addToOrdered(arr, (elem) => elem.timestamp, jan1, jan2);
-        
+
         assert(arr.length === 2);
         assert(arr[0].payload === 'event1');
         assert(arr[1].payload === 'event2');
+    });
+
+    it('remove from front of empty', function() {
+        const arr = [];
+        tw.removeFirstItems(arr, 0);
+        assert(arr.length === 0);
+    });
+
+    it('remove from front of one element', function() {
+        const arr = [ 42 ];
+        tw.removeFirstItems(arr, 1);
+        assert(arr.length === 0);
+    });
+
+    it('remove from front of two elements', function() {
+        const arr = [ 42, 43 ];
+        tw.removeFirstItems(arr, 1);
+        assert(arr.length === 1);
+        assert(arr[0] === 43);
+    });
+
+    it('remove multiple from front', function() {
+        const arr = [ 42, 43, 44 ];
+        tw.removeFirstItems(arr, 2);
+        assert(arr.length === 1);
+        assert(arr[0] === 44);
     });
 
 });

@@ -72,8 +72,40 @@ function addToOrderedAndEvictBefore(arr, startTime, timestampSelector, ...values
     
 }
 
+/**
+ * Perform in-place removal of the first N elements in an array.
+ * @param {Array} arr - array to be modified.
+ * @param {number} count - Number of elements to remove from the front of the array.
+ */
+function removeFirstItems(arr, count) {
+    if (!Array.isArray(arr)) {
+        throw new TypeError('arr must be an Array instance');
+    }
+    if (!Number.isInteger(count) || count < 0 || count > arr.length) {
+        throw new RangeError('count must be a positive integer.');
+    }
+    if (count > arr.length) {
+        throw new RangeError('count cannot be larger than array\'s length');
+    }
+
+    if (count === 1) {
+        arr.shift();
+    }
+    else if (count >= 1) {
+        // Instead of repeatedly making the expensive shift() call,
+        // we manually shift elements in a single pass:
+        for (let from = count, to = 0; from < arr.length; from++, to++) {
+            arr[to] = arr[from];
+        }
+        // Use Array.length to truncate leftover elements:
+        arr.length = arr.length - count;
+    }
+
+}
+
 module.exports = {
     addToOrdered: addToOrdered,
     addToOrderedAndEvictOldest: addToOrderedAndEvictOldest,
-    addToOrderedAndEvictBefore: addToOrderedAndEvictBefore
+    addToOrderedAndEvictBefore: addToOrderedAndEvictBefore,
+    removeFirstItems: removeFirstItems
 };
