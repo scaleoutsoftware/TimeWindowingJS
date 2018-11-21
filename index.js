@@ -17,14 +17,14 @@ const TimeWindow = require('./timeWindow');
  * Transforms an ordered array into an iterable collection of sliding windows. The source array must be sorted chronologically.
  * @param {Array} sourceArray - Array of time-ordered elements to transform.
  * @param {TimestampSelector} timestampSelector - Function to extract a timestamp from elements in the source array.
- * @param {number} start - Start time (inclusive) of the first sliding window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's first element will be used.
- * @param {number} end - End time (exclusive) for the last sliding window(s), expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, a timestamp of one millisecond after the array's last element will be used.
  * @param {number} windowDuration - Duration of each time window in milliseconds. This is a maximum value that will be shortened for the last window(s) in the returned sequence (see remarks).
  * @param {number} every - The period of time, in milliseconds, between the start of each sliding window.
+ * @param {number} start - Start time (inclusive) of the first sliding window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's first element will be used.
+ * @param {number} end - End time (exclusive) for the last sliding window(s), expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, a timestamp of one millisecond after the array's last element will be used.
  * @generator
  * @yields {TimeWindow} The next window in the sequence of sliding windows.
  */
-function* toSlidingWindows(sourceArray, timestampSelector, start, end, windowDuration, every) {
+function* toSlidingWindows(sourceArray, timestampSelector, windowDuration, every, start, end) {
     if (!Array.isArray(sourceArray)) {
         throw new TypeError('sourceArray must be an Array instance');
     }
@@ -38,9 +38,11 @@ function* toSlidingWindows(sourceArray, timestampSelector, start, end, windowDur
     if (start == null) {
         start = timestampSelector(sourceArray[0]);
     }
+    let ignoreTrailingWindow = false;
     if (end == null) {
         // add a millisecond to the last item's timestamp, otherwise it won't be included.
         end = timestampSelector(sourceArray[sourceArray.length -1]) + 1;
+        ignoreTrailingWindow = true;
     }
     if (!Number.isInteger(start) || !Number.isInteger(end)) {
         throw new TypeError('start and end time arguments must be integers (typically milliseconds elapsed since January 1, 1970 00:00:00 UTC.');
@@ -58,10 +60,18 @@ function* toSlidingWindows(sourceArray, timestampSelector, start, end, windowDur
             actualDur = end - windowStart;
 
         const win = new TimeWindow(sourceArray, windowStart, windowStart + actualDur, startingIndexMemo, timestampSelector);
-        yield win;
-
         windowStart = windowStart + every;
         startingIndexMemo = win.sourceIndex;
+
+        if (ignoreTrailingWindow && win.end === end && win.durationMillis === 1) {
+            // this is an extra window that's an artifact of us adding an extra millisecond
+            // to the end time when an automatic end time is calculated above. Don't yield it.
+            continue;
+        }
+
+        yield win;
+
+        
     }
 }
 
