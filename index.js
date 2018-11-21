@@ -144,7 +144,7 @@ function removeFirstItems(arr, count) {
     if (!Array.isArray(arr)) {
         throw new TypeError('arr must be an Array instance');
     }
-    if (!Number.isInteger(count) || count < 0 || count > arr.length) {
+    if (!Number.isInteger(count) || count < 0) {
         throw new RangeError('count must be a positive integer.');
     }
     if (count > arr.length) {
