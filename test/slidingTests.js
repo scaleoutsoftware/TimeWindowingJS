@@ -37,10 +37,11 @@ describe('Sliding Window Tests', function() {
         const res = Array.from(slidingWindows);
         assert.strictEqual(4, res.length);
 
-        const first = Array.from(res[0]);
+        const first = res[0].toArray();
         assert.strictEqual(2, first.length);
-        const last = Array.from(res[3]);
+        const last = res[3].toArray();
         assert.strictEqual(1, last.length);
+
     });
 
 });

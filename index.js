@@ -2,57 +2,66 @@
 const TimeWindow = require('./timeWindow');
 
 /**
- * User-supplied callback function that extracts a timestamp from an event.
- * @callback TimestampSelector
- * @param {any} event - Object representing an event.
- * @returns {number} The time that the event argument occurred, represented as milliseconds elapsed since January 1, 1970 00:00:00 UTC.
+ * Functions to manage and analyze arrays of time-ordered events.
+ * @module time-windowing
  */
-
 
 /**
- * 
- * @param {Array} arr - source array of time-ordered elements to transform.
- * @param {TimestampSelector} timestampSelector - function to extract a timestamp from an element.
- * @param {number} start - start time (inclusive) of the first sliding window. If undefined, the timestamp of the array's first element will be used.
- * @param {number} end - end time (exclusive) for the last of sliding window(s). If undefined, a timestamp of one millisecond after the array's last element will be used.
- * @param {number} windowDuration - Duration of each time window in milliseconds. This is a maximum value that will be shortened for the last window(s) in the returned sequence (see remarks).
- * @param {number} every - the period of time, in milliseconds, between the start of each sliding window.
+ * User-supplied callback that extracts a timestamp from an element in a time-ordered array of events.
+ * @callback TimestampSelector
+ * @param {any} elem - Timestamped element in a time-ordered array of events.
+ * @returns {number} The time that the elem argument occurred, represented as milliseconds elapsed since January 1, 1970 00:00:00 UTC.
  */
-function* toSlidingWindows(arr, timestampSelector, start, end, windowDuration, every) {
-    if (!Array.isArray(arr)) {
-        throw new TypeError('arr must be an Array instance');
+
+/**
+ * Transforms an ordered array into an iterable collection of sliding windows. The source array must be sorted chronologically.
+ * @param {Array} sourceArray - Array of time-ordered elements to transform.
+ * @param {TimestampSelector} timestampSelector - Function to extract a timestamp from elements in the source array.
+ * @param {number} start - Start time (inclusive) of the first sliding window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's first element will be used.
+ * @param {number} end - End time (exclusive) for the last sliding window(s), expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, a timestamp of one millisecond after the array's last element will be used.
+ * @param {number} windowDuration - Duration of each time window in milliseconds. This is a maximum value that will be shortened for the last window(s) in the returned sequence (see remarks).
+ * @param {number} every - The period of time, in milliseconds, between the start of each sliding window.
+ * @generator
+ * @yields {TimeWindow} The next window in the sequence of sliding windows.
+ */
+function* toSlidingWindows(sourceArray, timestampSelector, start, end, windowDuration, every) {
+    if (!Array.isArray(sourceArray)) {
+        throw new TypeError('sourceArray must be an Array instance');
     }
     if (timestampSelector == null) {
         throw new TypeError('timestampSelector cannot be null/undefined.');
     }
-    if (arr.length === 0) {
+    if (sourceArray.length === 0) {
         return;
     }
 
     if (start == null) {
-        start = timestampSelector(arr[0]);
+        start = timestampSelector(sourceArray[0]);
     }
     if (end == null) {
         // add a millisecond to the last item's timestamp, otherwise it won't be included.
-        end = timestampSelector(arr[arr.length -1]) + 1;
+        end = timestampSelector(sourceArray[sourceArray.length -1]) + 1;
     }
     if (!Number.isInteger(start) || !Number.isInteger(end)) {
         throw new TypeError('start and end time arguments must be integers (typically milliseconds elapsed since January 1, 1970 00:00:00 UTC.');
     }
     
+    // Memoized starting point for next window (otherwise each window 
+    // would need to traverse the entire source array).
+    let startingIndexMemo = 0;
     let windowStart = start;
-    let startingIndexHint = 0;
+
     while (windowStart < end) {
         let actualDur = windowDuration;
 
         if ((windowStart + windowDuration) > end)
             actualDur = end - windowStart;
 
-        const win = new TimeWindow(arr, windowStart, windowStart + actualDur, startingIndexHint, timestampSelector);
+        const win = new TimeWindow(sourceArray, windowStart, windowStart + actualDur, startingIndexMemo, timestampSelector);
         yield win;
 
         windowStart = windowStart + every;
-        startingIndexHint = win.sourceIndex;
+        startingIndexMemo = win.sourceIndex;
     }
 }
 

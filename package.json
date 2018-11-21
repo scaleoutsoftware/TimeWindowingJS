@@ -1,7 +1,7 @@
 {
   "name": "time-windowing",
   "version": "1.0.0",
-  "description": "Funcitons ot manage and analyze arrays of time-ordered events.",
+  "description": "Functions to manage and analyze arrays of time-ordered events.",
   "repository": {
     "type": "git",
     "url": "https://github.com/scaleoutsoftware/TimeWindowingJS"
