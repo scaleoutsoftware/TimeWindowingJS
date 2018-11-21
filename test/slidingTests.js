@@ -79,7 +79,7 @@ describe('Sliding Window Tests', function() {
         // Unlike the behavior when end date is explicitly provided to toSlidingWindows(),
         // the end time of the last window includes the final element (Jan. 5th).
         const last = res[3].toArray();
-        assert.strictEqual(1, last.length);
+        assert.strictEqual(2, last.length);
 
     });
 
