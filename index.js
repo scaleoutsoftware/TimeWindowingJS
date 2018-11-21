@@ -40,7 +40,9 @@ function* toSlidingWindows(sourceArray, timestampSelector, windowDuration, every
     }
     let ignoreTrailingWindow = false;
     if (end == null) {
-        // add a millisecond to the last item's timestamp, otherwise it won't be included.
+        // add a millisecond to the last item's timestamp and use it as the 
+        // end time for this transform (we add a millisecond because the end time
+        // on a window is exclusive--otherwise the last item wouldn't be included).
         end = timestampSelector(sourceArray[sourceArray.length -1]) + 1;
         ignoreTrailingWindow = true;
     }
@@ -65,7 +67,7 @@ function* toSlidingWindows(sourceArray, timestampSelector, windowDuration, every
 
         if (ignoreTrailingWindow && win.end === end && win.durationMillis === 1) {
             // this is an extra window that's an artifact of us adding an extra millisecond
-            // to the end time when an automatic end time is calculated above. Don't yield it.
+            // to the end time the end is automatically calculated above. Don't yield it.
             continue;
         }
 
