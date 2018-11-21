@@ -1,11 +1,60 @@
 'use strict';
+const TimeWindow = require('./timeWindow');
 
 /**
  * User-supplied callback function that extracts a timestamp from an event.
  * @callback TimestampSelector
  * @param {any} event - Object representing an event.
- * @returns {Date|number} The time (Date or number) that the event argument occurred.
+ * @returns {number} The time that the event argument occurred, represented as milliseconds elapsed since January 1, 1970 00:00:00 UTC.
  */
+
+
+/**
+ * 
+ * @param {Array} arr - source array of time-ordered elements to transform.
+ * @param {TimestampSelector} timestampSelector - function to extract a timestamp from an element.
+ * @param {number} start - start time (inclusive) of the first sliding window. If undefined, the timestamp of the array's first element will be used.
+ * @param {number} end - end time (exclusive) for the last of sliding window(s). If undefined, a timestamp of one millisecond after the array's last element will be used.
+ * @param {number} windowDuration - Duration of each time window in milliseconds. This is a maximum value that will be shortened for the last window(s) in the returned sequence (see remarks).
+ * @param {number} every - the period of time, in milliseconds, between the start of each sliding window.
+ */
+function* toSlidingWindows(arr, timestampSelector, start, end, windowDuration, every) {
+    if (!Array.isArray(arr)) {
+        throw new TypeError('arr must be an Array instance');
+    }
+    if (timestampSelector == null) {
+        throw new TypeError('timestampSelector cannot be null/undefined.');
+    }
+    if (arr.length === 0) {
+        return;
+    }
+
+    if (start == null) {
+        start = timestampSelector(arr[0]);
+    }
+    if (end == null) {
+        // add a millisecond to the last item's timestamp, otherwise it won't be included.
+        end = timestampSelector(arr[arr.length -1]) + 1;
+    }
+    if (!Number.isInteger(start) || !Number.isInteger(end)) {
+        throw new TypeError('start and end time arguments must be integers (typically milliseconds elapsed since January 1, 1970 00:00:00 UTC.');
+    }
+    
+    let windowStart = start;
+    let startingIndexHint = 0;
+    while (windowStart < end) {
+        let actualDur = windowDuration;
+
+        if ((windowStart + windowDuration) > end)
+            actualDur = end - windowStart;
+
+        const win = new TimeWindow(arr, windowStart, windowStart + actualDur, startingIndexHint, timestampSelector);
+        yield win;
+
+        windowStart = windowStart + every;
+        startingIndexHint = win.sourceIndex;
+    }
+}
 
 /**
  * Adds one or more elements to a time-ordered array of items, inserting them in chronological order.
@@ -118,6 +167,7 @@ function removeFirstItems(arr, count) {
 }
 
 module.exports = {
+    toSlidingWindows: toSlidingWindows,
     addToOrdered: addToOrdered,
     addToOrderedAndEvictOldest: addToOrderedAndEvictOldest,
     addToOrderedAndEvictBefore: addToOrderedAndEvictBefore,
