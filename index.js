@@ -21,8 +21,7 @@ const WindowIterator = require('./windowIterator');
  * @param {number} every - The period of time, in milliseconds, between the start of each sliding window.
  * @param {number} start - Start time (inclusive) of the first sliding window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's first element will be used.
  * @param {number} end - End time (exclusive) for the last sliding window(s), expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, a timestamp of one millisecond after the array's last element will be used.
- * @generator
- * @yields {TimeWindow} The next window in the sequence of sliding windows.
+ * @returns {WindowIterator} An iterable collection of TimeWindow instances.
  */
 function toSlidingWindows(sourceArray, timestampSelector, windowDuration, every, start, end) {
     if (!Array.isArray(sourceArray)) {
