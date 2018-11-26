@@ -1,5 +1,5 @@
 'use strict';
-const TimeWindow = require('./timeWindow');
+const WindowIterator = require('./windowIterator');
 
 /**
  * Functions to manage and analyze arrays of time-ordered events.
@@ -24,57 +24,18 @@ const TimeWindow = require('./timeWindow');
  * @generator
  * @yields {TimeWindow} The next window in the sequence of sliding windows.
  */
-function* toSlidingWindows(sourceArray, timestampSelector, windowDuration, every, start, end) {
+function toSlidingWindows(sourceArray, timestampSelector, windowDuration, every, start, end) {
     if (!Array.isArray(sourceArray)) {
         throw new TypeError('sourceArray must be an Array instance');
     }
     if (timestampSelector == null) {
         throw new TypeError('timestampSelector cannot be null/undefined.');
     }
-    if (sourceArray.length === 0) {
-        return;
+    if (every == null || !Number.isInteger(every)) {
+        throw new TypeError('The "every" argument must be an integer representing a duration in milliseconds.');
     }
 
-    if (start == null) {
-        start = timestampSelector(sourceArray[0]);
-    }
-    let ignoreTrailingWindow = false;
-    if (end == null) {
-        // add a millisecond to the last item's timestamp and use it as the 
-        // end time for this transform (we add a millisecond because the end time
-        // on a window is exclusive--otherwise the last item wouldn't be included).
-        end = timestampSelector(sourceArray[sourceArray.length -1]) + 1;
-        ignoreTrailingWindow = true;
-    }
-    if (!Number.isInteger(start) || !Number.isInteger(end)) {
-        throw new TypeError('start and end time arguments must be integers (typically milliseconds elapsed since January 1, 1970 00:00:00 UTC.');
-    }
-    
-    // Memoized starting point for next window (otherwise each window 
-    // would need to traverse the entire source array).
-    let startingIndexMemo = 0;
-    let windowStart = start;
-
-    while (windowStart < end) {
-        let actualDur = windowDuration;
-
-        if ((windowStart + windowDuration) > end)
-            actualDur = end - windowStart;
-
-        const win = new TimeWindow(sourceArray, windowStart, windowStart + actualDur, startingIndexMemo, timestampSelector);
-        windowStart = windowStart + every;
-        startingIndexMemo = win.sourceIndex;
-
-        if (ignoreTrailingWindow && win.end === end && win.durationMillis === 1) {
-            // this is an extra window that's an artifact of us adding an extra millisecond
-            // to the end time the end is automatically calculated above. Don't yield it.
-            continue;
-        }
-
-        yield win;
-
-        
-    }
+    return new WindowIterator(sourceArray, timestampSelector, windowDuration, every, start, end);
 }
 
 /**

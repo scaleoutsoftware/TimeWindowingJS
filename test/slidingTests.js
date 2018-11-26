@@ -34,7 +34,7 @@ describe('Sliding Window Tests', function() {
             start.valueOf(), 
             end.valueOf());
 
-        const res = Array.from(slidingWindows);
+        const res = slidingWindows.toArray();
         assert.strictEqual(4, res.length);
 
         const first = res[0].toArray();
@@ -71,7 +71,7 @@ describe('Sliding Window Tests', function() {
             2 * oneDay,
             oneDay);
 
-        const res = Array.from(slidingWindows);
+        const res = slidingWindows.toArray();
         assert.strictEqual(4, res.length);
 
         const first = res[0].toArray();
