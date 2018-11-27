@@ -80,6 +80,7 @@ class TimeWindow {
      * @param {number} currentValue - The current element in the TimeWindow being processed.
      * @param {string} [index] - The index of the current element being processed in the array.
      * @param {TimeWindow} [window] - The TimeWindow that map() was called upon.
+     * @returns {any} Transformed element.
      */
 
     /**

@@ -1,14 +1,12 @@
 'use strict';
 const WindowIterator = require('./windowIterator');
 
-/**
- * Functions to manage and analyze arrays of time-ordered events.
- * @module time-windowing
- */
+
 
 /**
  * User-supplied callback that extracts a timestamp from an element in a time-ordered array of events.
- * @callback TimestampSelector
+ * 
+ * @callback timestampSelector
  * @param {any} elem - Timestamped element in a time-ordered array of events.
  * @returns {number} The time that the elem argument occurred, represented as milliseconds elapsed since January 1, 1970 00:00:00 UTC.
  */
@@ -16,7 +14,7 @@ const WindowIterator = require('./windowIterator');
 /**
  * Transforms an ordered array into an iterable collection of sliding windows. The source array must be sorted chronologically.
  * @param {Array} sourceArray - Array of time-ordered elements to transform.
- * @param {TimestampSelector} timestampSelector - Function to extract a timestamp from elements in the source array.
+ * @param {timestampSelector} timestampSelector - Function to extract a timestamp from elements in the source array.
  * @param {number} windowDuration - Duration of each time window in milliseconds. This is a maximum value that will be shortened for the last window(s) in the returned sequence (see remarks).
  * @param {number} every - The period of time, in milliseconds, between the start of each sliding window.
  * @param {number} start - Start time (inclusive) of the first sliding window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's first element will be used.
@@ -40,7 +38,7 @@ function toSlidingWindows(sourceArray, timestampSelector, windowDuration, every,
 /**
  * Adds one or more elements to a time-ordered array of items, inserting them in chronological order.
  * @param {Array} arr - destination array for new element(s).
- * @param {TimestampSelector} timestampSelector - function to extract a timestamp from an element.
+ * @param {timestampSelector} timestampSelector - function to extract a timestamp from an element.
  * @param {...any} values - value(s) to add to the array.
  */
 function addToOrdered(arr, timestampSelector, ...values) {
@@ -74,7 +72,7 @@ function addToOrdered(arr, timestampSelector, ...values) {
  * the destination array will be evicted.
  * @param {Array} arr - destination array for new element(s).
  * @param {number} maxArraySize - max allowed size of destination array before eviction begins.
- * @param {TimestampSelector} timestampSelector - function to extract a timestamp from an element.
+ * @param {timestampSelector} timestampSelector - function to extract a timestamp from an element.
  * @param {...any} values - value(s) to add to the array.
  */
 function addToOrderedAndEvictOldest(arr, maxArraySize, timestampSelector, ...values) {
@@ -96,7 +94,7 @@ function addToOrderedAndEvictOldest(arr, maxArraySize, timestampSelector, ...val
  * destination array.
  * @param {Array} arr - destination array for new element(s).
  * @param {Date|number} startTime - start time (inclusive) of the first allowed element in the destination array.
- * @param {TimestampSelector} timestampSelector - function to extract a timestamp from an element.
+ * @param {timestampSelector} timestampSelector - function to extract a timestamp from an element.
  * @param {...any} values - value(s) to add to the array.
  */
 function addToOrderedAndEvictBefore(arr, startTime, timestampSelector, ...values) {
