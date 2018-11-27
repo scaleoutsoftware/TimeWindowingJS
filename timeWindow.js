@@ -72,6 +72,52 @@ class TimeWindow {
     toArray() {
         return Array.from(this);
     }
+
+    /**
+     * Function that produces an element for the new Array, taking three arguments: 
+     *
+     * @callback mapCallback
+     * @param {number} currentValue - The current element in the TimeWindow being processed.
+     * @param {string} [index] - The index of the current element being processed in the array.
+     * @param {TimeWindow} [window] - The TimeWindow that map() was called upon.
+     */
+
+    /**
+     * Creates a new array with the results of calling a provided function
+     * on every element in the calling TimeWindow instance.
+     * @param {mapCallback} callbackfn - Function that produces an element of the new Array.
+     * @param {any} thisArg - Value to use as <tt>this</tt> when executing callback.
+     * @returns {Array} A new array with each element being the result of the callback function.
+     */
+    map(callbackfn, thisArg) {
+        // Adapted from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map#Polyfill
+
+        if (this == null) {
+            throw new TypeError('this is null or not defined');
+        }
+        if (typeof callbackfn !== 'function') {
+            throw new TypeError(callbackfn + ' is not a function');
+        }
+
+        let T = undefined;
+        // If thisArg was supplied, let T be thisArg; else let T be undefined.
+        if (thisArg == null) {
+            T = thisArg;
+        }
+
+        const arr = [];
+        let k = 0;
+        for (const elem of this) {
+            // Let mappedValue be the result of calling the Call internal 
+            // method of callback with T as the this value and argument 
+            // list containing the window element, k, and the source TimeWindow.
+            const mappedValue = callbackfn.call(T, elem, k, this);
+
+            arr.push(mappedValue);
+            k++;
+        }
+        return arr;
+    }
 }
 
 module.exports = TimeWindow;
