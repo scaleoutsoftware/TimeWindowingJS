@@ -22,6 +22,7 @@
   "devDependencies": {
     "eslint": "^5.9.0",
     "jsdoc": "^3.5.5",
+    "mathjs": "^5.2.3",
     "mocha": "^5.2.0"
   }
 }
