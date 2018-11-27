@@ -27,8 +27,8 @@ function toSlidingWindows(sourceArray, timestampSelector, windowDuration, every,
     if (!Array.isArray(sourceArray)) {
         throw new TypeError('sourceArray must be an Array instance');
     }
-    if (timestampSelector == null) {
-        throw new TypeError('timestampSelector cannot be null/undefined.');
+    if (typeof timestampSelector !== 'function') {
+        throw new TypeError(timestampSelector + ' is not a function');
     }
     if (every == null || !Number.isInteger(every)) {
         throw new TypeError('The "every" argument must be an integer representing a duration in milliseconds.');
@@ -47,8 +47,8 @@ function addToOrdered(arr, timestampSelector, ...values) {
     if (!Array.isArray(arr)) {
         throw new TypeError('arr must be an Array instance');
     }
-    if (timestampSelector == null) {
-        throw new TypeError('timestampSelector cannot be null/undefined.');
+    if (typeof timestampSelector !== 'function') {
+        throw new TypeError(timestampSelector + ' is not a function');
     }
 
     for (let i = 0; i < values.length; i++) {
