@@ -77,8 +77,8 @@ class TimeWindow {
      * Function that produces an element for the new Array, taking three arguments: 
      *
      * @callback mapCallback
-     * @param {number} currentValue - The current element in the TimeWindow being processed.
-     * @param {string} [index] - The index of the current element being processed in the array.
+     * @param {any} currentValue - The current element in the TimeWindow being processed.
+     * @param {number} [index] - The index of the current element being processed in the array.
      * @param {TimeWindow} [window] - The TimeWindow that map() was called upon.
      * @returns {any} Transformed element.
      */
@@ -125,8 +125,8 @@ class TimeWindow {
      *  false otherwise. Three arguments are provided to this callback: 
      *
      * @callback filterCallback
-     * @param {number} currentValue - The current element in the TimeWindow being tested.
-     * @param {string} [index] - The index of the current element being processed in the array.
+     * @param {any} currentValue - The current element in the TimeWindow being tested.
+     * @param {number} [index] - The index of the current element being processed in the array.
      * @param {TimeWindow} [window] - The TimeWindow that filter() was called upon.
      * @returns {boolean} true to keep the element, false otherwise.
      */
@@ -161,6 +161,66 @@ class TimeWindow {
             k++;
         }
         return arr;
+    }
+
+    /**
+     *  Reducer function to execute on each element in the TimeWindow, taking four arguments:  
+     *
+     * @callback reduceCallback
+     * @param {any} accumulator - The accumulator accumulates the callback's return values; it is the accumulated value previously returned in the last invocation of the callback, or initialValue, if supplied.
+     * @param {any} currentValue - The current element in the TimeWindow being processed.
+     * @param {number} [index] - The index of the current element being processed in the array.
+     * @param {TimeWindow} [window] - The TimeWindow that reduce() was called upon.
+     * @returns {any} The accumulating value that is eventually returned to the reduce() caller. This returned value is assigned to the accumulator, whose value is remembered across each iteration throughout the window and ultimately becomes the final, single resulting value.
+     */
+
+    /**
+     * Executes the provided reducer function on each member of the TimeWindow, resulting in a single output value.
+     * @param {reduceCallback} callbackfn - Function that executes each element in the TimeWindow and returns an accumulating value.
+     * @param {any} [initialValue] - Optional. Value to use as the first argument to the first call of the callback. If no initial value is supplied, the first element in the window will be used. Calling reduce() on an empty window without an initial value is an error.
+     * @returns {any} The accumulated value that results from the reduction.
+     */
+    reduce(callbackfn/*, initialValue*/) {
+        if (this == null) {
+            throw new TypeError('this is null or not defined');
+        }
+        if (typeof callbackfn !== 'function') {
+            throw new TypeError(callbackfn + ' is not a function');
+        }
+
+        let k = 0;
+        let accumulator = undefined;
+        let haveInitialValue = false;
+
+        if (arguments.length >= 2) {
+            accumulator = arguments[1];
+            haveInitialValue = true;
+        } else {
+            haveInitialValue = false;
+        }
+
+        for (const elem of this) {
+
+            if (k === 0 && !haveInitialValue) {
+                // Don't invoke the callback for the zeroth element if no initialValue
+                // is provided--it becomes the initial value and we move on to the next element.
+                accumulator = elem;
+            }
+            else {
+                // Normal path, invoking callback
+                accumulator = callbackfn(accumulator, elem, k, this);
+            }
+
+            k++;
+        }
+
+        if (k === 0 && !haveInitialValue) {
+            throw new TypeError('Reduce of empty TimeWindow with no initial value');
+        }
+        else {
+            return accumulator;
+        }
+
     }
 }
 
