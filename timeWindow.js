@@ -121,20 +121,20 @@ class TimeWindow {
     }
 
     /**
-     *  Predicate used to test each element TimeWindow. Return true to keep the element,
-     *  false otherwise. Three arguments are provided to this callback: 
+     *  Predicate used to test each element the TimeWindow. Return true if the element satisifies the
+     *  condition, false otherwise. Three arguments are provided to this callback: 
      *
-     * @callback filterCallback
+     * @callback predicateCallback
      * @param {any} currentValue - The current element in the TimeWindow being tested.
      * @param {number} [index] - The index of the current element being processed in the array.
-     * @param {TimeWindow} [window] - The TimeWindow that filter() was called upon.
-     * @returns {boolean} true to keep the element, false otherwise.
+     * @param {TimeWindow} [window] - The TimeWindow being evaluated.
+     * @returns {boolean} true if the element satisfies the condition, false otherwise.
      */
 
     /**
      * Creates a new array containing elements from the TimeWindow that pass the
      * test implemented by the provided function. 
-     * @param {filterCallback} callbackfn - Function is a predicate used to test each element of the array. Return true to keep the element, false otherwise.
+     * @param {predicateCallback} callbackfn - Function is a predicate used to test each element of the array. Return true to keep the element, false otherwise.
      * @param {any} [thisArg] - Optional. Value to use as this when executing the callback.
      * @returns {Array} A new array with the elements that pass the test. If no elements pass the test, an empty array will be returned.
      */
@@ -222,6 +222,69 @@ class TimeWindow {
         }
 
     }
+
+    /**
+     * The some() method tests whether at least one element in the TimeWindow passes the test 
+     * implemented by the provided function. If the window is empty then the method will always return false.
+     * @param {predicateCallback} callbackfn - Function to test for each element.
+     * @param {any} [thisArg] - Optional. Value to use as this when executing the callback.
+     * @returns {boolean} true if the callback function returns a truthy value for any array element; otherwise, false.
+     */
+    some(callbackfn, thisArg) {
+        if (this == null) {
+            throw new TypeError('this is null or not defined');
+        }
+        if (typeof callbackfn !== 'function') {
+            throw new TypeError(callbackfn + ' is not a function');
+        }
+
+        let T = undefined;
+        // If thisArg was supplied, let T be thisArg; else let T be undefined.
+        if (thisArg != null) {
+            T = thisArg;
+        }
+
+        let k = 0;
+        for (const elem of this) {
+            if (callbackfn.call(T, elem, k, this)) {
+                return true;
+            }
+            k++;
+        }
+        return false;
+    }
+
+    /**
+     * The every() method tests whether all elements in the TimeWindow pass the test implemented 
+     * by the provided function. If the window is empty then the method will always return true.
+     * @param {predicateCallback} callbackfn - Function to test for each element.
+     * @param {any} [thisArg] - Optional. Value to use as this when executing the callback.
+     * @returns {boolean} true if the callback function returns a truthy value for every TimeWindow element; otherwise, false.
+     */
+    every(callbackfn, thisArg) {
+        if (this == null) {
+            throw new TypeError('this is null or not defined');
+        }
+        if (typeof callbackfn !== 'function') {
+            throw new TypeError(callbackfn + ' is not a function');
+        }
+
+        let T = undefined;
+        // If thisArg was supplied, let T be thisArg; else let T be undefined.
+        if (thisArg != null) {
+            T = thisArg;
+        }
+
+        let k = 0;
+        for (const elem of this) {
+            if (!callbackfn.call(T, elem, k, this)) {
+                return false;
+            }
+            k++;
+        }
+        return true;
+    }
+
 }
 
 module.exports = TimeWindow;
