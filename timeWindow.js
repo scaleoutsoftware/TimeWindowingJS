@@ -285,6 +285,72 @@ class TimeWindow {
         return true;
     }
 
+    /**
+     * Returns the value of the first element in the TimeWindow that satisfies the provided testing function. Otherwise undefined is returned.
+     * @param {predicateCallback} callbackfn - Function to test for each element.
+     * @param {any} [thisArg] - Optional. Value to use as this when executing the callback.
+     * @returns {any} The value of the first element in the TimeWindow that satisfies the provided testing function; otherwise, undefined is returned.
+     */
+    find(callbackfn, thisArg) {
+        if (this == null) {
+            throw new TypeError('this is null or not defined');
+        }
+        if (typeof callbackfn !== 'function') {
+            throw new TypeError(callbackfn + ' is not a function');
+        }
+
+        let T = undefined;
+        // If thisArg was supplied, let T be thisArg; else let T be undefined.
+        if (thisArg != null) {
+            T = thisArg;
+        }
+
+        let k = 0;
+        for (const elem of this) {
+            if (callbackfn.call(T, elem, k, this)) {
+                return elem;
+            }
+            k++;
+        }
+        return undefined;
+    }
+
+    /**
+     * Function that is executed on each element in a TimeWindow, taking three arguments: 
+     *
+     * @callback forEachCallback
+     * @param {any} currentValue - The current element in the TimeWindow being processed.
+     * @param {number} [index] - The index of the current element being processed in the array.
+     * @param {TimeWindow} [window] - The TimeWindow that forEach() was called upon.
+     */
+
+    /**
+     * Executes a provided function once for each TimeWindow element.
+     * @param {predicateCallback} callbackfn - Function to execute for each element.
+     * @param {any} [thisArg] - Optional. Value to use as this when executing the callback.
+     * @returns {undefined}
+     */
+    forEach(callbackfn, thisArg) {
+        if (this == null) {
+            throw new TypeError('this is null or not defined');
+        }
+        if (typeof callbackfn !== 'function') {
+            throw new TypeError(callbackfn + ' is not a function');
+        }
+
+        let T = undefined;
+        // If thisArg was supplied, let T be thisArg; else let T be undefined.
+        if (thisArg != null) {
+            T = thisArg;
+        }
+
+        let k = 0;
+        for (const elem of this) {
+            callbackfn.call(T, elem, k, this);
+            k++;
+        }
+    }
+
 }
 
 module.exports = TimeWindow;
