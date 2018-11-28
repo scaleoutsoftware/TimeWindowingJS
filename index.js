@@ -18,7 +18,7 @@ const WindowIterator = require('./windowIterator');
  * @param {number} windowDuration - Duration of each time window in milliseconds. This is a maximum value that will be shortened for the last window(s) in the returned sequence.
  * @param {number} every - The period of time, in milliseconds, between the start of each sliding window.
  * @param {number} start - Start time (inclusive) of the first sliding window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's first element will be used.
- * @param {number} end - End time (exclusive) for the last sliding window(s), expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, a timestamp of one millisecond after the array's last element will be used.
+ * @param {number} end - End time (exclusive) for the last sliding window(s), expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's last element will be used, and the last window's end time will be inclusive.
  * @returns {WindowIterator} An iterable collection of TimeWindow instances.
  */
 function toSlidingWindows(sourceArray, timestampSelector, windowDuration, every, start, end) {
@@ -41,7 +41,7 @@ function toSlidingWindows(sourceArray, timestampSelector, windowDuration, every,
  * @param {timestampSelector} timestampSelector - Function to extract a timestamp from elements in the source array.
  * @param {number} windowDuration - Duration of each time window in milliseconds. This is a maximum value that may be shortened for the last window in the returned sequence.
  * @param {number} start - Start time (inclusive) of the first sliding window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's first element will be used.
- * @param {number} end - End time (exclusive) for the last sliding window(s), expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, a timestamp of one millisecond after the array's last element will be used.
+ * @param {number} end - End time (exclusive) for the last sliding window(s), expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's last element will be used, and the last window's end time will be inclusive.
  * @returns {WindowIterator} An iterable collection of TimeWindow instances.
  */
 function toTumblingWindows(sourceArray, timestampSelector, windowDuration, start, end) {
@@ -160,6 +160,7 @@ function removeFirstItems(arr, count) {
 
 module.exports = {
     toSlidingWindows: toSlidingWindows,
+    toTumbliningWindows: toTumblingWindows,
     addToOrdered: addToOrdered,
     addToOrderedAndEvictOldest: addToOrderedAndEvictOldest,
     addToOrderedAndEvictBefore: addToOrderedAndEvictBefore,

@@ -21,13 +21,13 @@ class WindowIterator {
             this.start = start;
         }
 
-        this.ignoreTrailingWindow = false;
+        this.isEndInclusive = false;
         if (end == null) {
-            // add a millisecond to the last item's timestamp and use it as the 
-            // end time for this transform (we add a millisecond because the end time
-            // on a window is exclusive--otherwise the last item wouldn't be included).
-            this.end = timestampSelector(sourceArray[sourceArray.length -1]) + 1;
-            this.ignoreTrailingWindow = true;
+            // Look at the last item's timestamp and use it as the 
+            // end time for this transform (we also make the end date inclusive for the
+            // final window(s)--otherwise the last item wouldn't be included).
+            this.end = timestampSelector(sourceArray[sourceArray.length -1]);
+            this.isEndInclusive = true;
         }
         else {
             this.end = end;
@@ -45,23 +45,28 @@ class WindowIterator {
         // Memoized starting point for next window (otherwise each window 
         // would need to traverse the entire source array).
         let startingIndexMemo = 0;
-        let windowStart = this.start;
+        let nextWindowStart = this.start;
 
-        while (windowStart < this.end) {
+        while (nextWindowStart < this.end) {
             let actualDur = this.windowDuration;
 
-            if ((windowStart + this.windowDuration) > this.end)
-                actualDur = this.end - windowStart;
+            if ((nextWindowStart + this.windowDuration) > this.end)
+                actualDur = this.end - nextWindowStart;
 
-            const win = new TimeWindow(sourceArray, windowStart, windowStart + actualDur, startingIndexMemo, this.timestampSelector);
-            windowStart = windowStart + this.every;
-            startingIndexMemo = win.sourceIndex;
+            const windowEnd = nextWindowStart + actualDur;
+            const isLastWindow = ((nextWindowStart + this.every) < this.end) ? false : true;
 
-            if (this.ignoreTrailingWindow && win.end === this.end && win.durationMillis === 1) {
-                // this is an extra window that's an artifact of us adding an extra millisecond
-                // to the end time the end is automatically calculated above. Don't yield it.
-                continue;
+            let isEndInclusive = false;
+            if (this.isEndInclusive && isLastWindow) {
+                // this window bumps up agains the final endDate, and the user is letting
+                // the algorithm automatically pick the end time. In this particular
+                // scenario, we make the end time of the final window inclusive.
+                isEndInclusive = true;
             }
+
+            const win = new TimeWindow(sourceArray, nextWindowStart, windowEnd, startingIndexMemo, this.timestampSelector, isEndInclusive);
+            nextWindowStart = nextWindowStart + this.every;
+            startingIndexMemo = win.sourceIndex;
 
             yield win;
         }

@@ -7,11 +7,13 @@ const _sourceArray = Symbol('_sourceArray');
  * @hideconstructor
  */
 class TimeWindow {
-    constructor(sourceArray, start, end, sourceIndexHint, timestampSelector) {
+    constructor(sourceArray, start, end, sourceIndexHint, timestampSelector, isEndInclusive) {
         /** @member {number} - Start time (inclusive) of the window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC.*/
         this.start = start;
-        /** @member {number} - End time (exclusive) of the window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC.*/
+        /** @member {number} - End time of the window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. The object's inclusiveEnd field indicates whether the end is inclusive or exclusive.*/
         this.end = end;
+        /** @member {bool} - Whether the end time is inclusive (true) or exclusive (false) */
+        this.isEndInclusive = isEndInclusive;
         
         this.sourceIndex = sourceIndexHint;
         this[_sourceArray] = sourceArray;
@@ -28,12 +30,25 @@ class TimeWindow {
 
     *[Symbol.iterator]() {
         const sourceArray = this[_sourceArray];
-        for (let i = this.sourceIndex; i < sourceArray.length; i++) {
-            if (this.timestampSelector(sourceArray[i]) < this.end) {
-                yield sourceArray[i];
+        if (this.isEndInclusive) {
+            for (let i = this.sourceIndex; i < sourceArray.length; i++) {
+                if (this.timestampSelector(sourceArray[i]) <= this.end) {
+                    yield sourceArray[i];
+                }
+                else {
+                    break;
+                }
             }
-            else {
-                break;
+        }
+        else {
+            // exclusive end time comparison:
+            for (let i = this.sourceIndex; i < sourceArray.length; i++) {
+                if (this.timestampSelector(sourceArray[i]) < this.end) {
+                    yield sourceArray[i];
+                }
+                else {
+                    break;
+                }
             }
         }
     }
@@ -48,7 +63,8 @@ class TimeWindow {
     }
 
     /**
-     * Get the end time (exclusive) of the window as a Date object.
+     * Get the end time of the window as a Date object. The object's inclusiveEnd
+     * field indicates whether the end is inclusive or exclusive.
      * @type {Date}
      * @readonly
      */
