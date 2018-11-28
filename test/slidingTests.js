@@ -118,6 +118,41 @@ describe('Sliding Window Tests', function() {
         assert.strictEqual(1.5, avg);
     });
 
+    it('filtered window', function() {
+        const oneDay = 24 * 60 * 60 * 1000; //in millis
+
+        /* First 5 days in January.
+        * Assuming sliding transform over Jan [1,5]
+        *    with period of 1 day and duration of 2 days
+        * 
+        * [-)      1,2
+        *  [-)     2,3
+        *   [-)    3,4
+        *    []    4,5
+        * |||||    
+        * 12345
+        **/
+
+        const arr = [];
+        for (let i = 1; i <= 5; i++) {
+            const elem = new MyEvent(i, new Date(2018, 0, i));
+            arr.push(elem);
+        }
+
+        const slidingWindows = tw.toSlidingWindows(
+            arr, 
+            (e) => e.timestamp.valueOf(), 
+            2 * oneDay,
+            oneDay);
+
+        const res = slidingWindows.toArray();
+        assert.strictEqual(4, res.length);
+
+        const filtered = res[2].filter(element => element.payload > 3);
+        assert.strictEqual(1, filtered.length);
+        assert.strictEqual(4, filtered[0].payload);
+    });
+
 });
 
 

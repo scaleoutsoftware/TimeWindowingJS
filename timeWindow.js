@@ -87,7 +87,7 @@ class TimeWindow {
      * Creates a new array with the results of calling a provided function
      * on every element in the calling TimeWindow instance.
      * @param {mapCallback} callbackfn - Function that produces an element of the new Array.
-     * @param {any} thisArg - Value to use as <tt>this</tt> when executing callback.
+     * @param {any} [thisArg] - Optional. Value to use as <tt>this</tt> when executing callback.
      * @returns {Array} A new array with each element being the result of the callback function.
      */
     map(callbackfn, thisArg) {
@@ -102,7 +102,7 @@ class TimeWindow {
 
         let T = undefined;
         // If thisArg was supplied, let T be thisArg; else let T be undefined.
-        if (thisArg == null) {
+        if (thisArg != null) {
             T = thisArg;
         }
 
@@ -115,6 +115,49 @@ class TimeWindow {
             const mappedValue = callbackfn.call(T, elem, k, this);
 
             arr.push(mappedValue);
+            k++;
+        }
+        return arr;
+    }
+
+    /**
+     *  Predicate used to test each element TimeWindow. Return true to keep the element,
+     *  false otherwise. Three arguments are provided to this callback: 
+     *
+     * @callback filterCallback
+     * @param {number} currentValue - The current element in the TimeWindow being tested.
+     * @param {string} [index] - The index of the current element being processed in the array.
+     * @param {TimeWindow} [window] - The TimeWindow that filter() was called upon.
+     * @returns {boolean} true to keep the element, false otherwise.
+     */
+
+    /**
+     * Creates a new array containing elements from the TimeWindow that pass the
+     * test implemented by the provided function. 
+     * @param {filterCallback} callbackfn - Function is a predicate used to test each element of the array. Return true to keep the element, false otherwise.
+     * @param {any} [thisArg] - Optional. Value to use as this when executing the callback.
+     * @returns {Array} A new array with the elements that pass the test. If no elements pass the test, an empty array will be returned.
+     */
+    filter(callbackfn, thisArg) {
+        if (this == null) {
+            throw new TypeError('this is null or not defined');
+        }
+        if (typeof callbackfn !== 'function') {
+            throw new TypeError(callbackfn + ' is not a function');
+        }
+
+        let T = undefined;
+        // If thisArg was supplied, let T be thisArg; else let T be undefined.
+        if (thisArg != null) {
+            T = thisArg;
+        }
+
+        const arr = [];
+        let k = 0;
+        for (const elem of this) {
+            if (callbackfn.call(T, elem, k, this)) {
+                arr.push(elem);
+            }
             k++;
         }
         return arr;
