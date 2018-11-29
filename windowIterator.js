@@ -74,7 +74,7 @@ class WindowIterator {
 
     /**
      * Returns elements in the iterable as an Array.
-     * @returns {Array} The TimeWindow instance in a new Array.
+     * @returns {Array} The TimeWindow instances in a new Array.
      */
     toArray() {
         return Array.from(this);

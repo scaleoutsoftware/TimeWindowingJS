@@ -1,5 +1,6 @@
 'use strict';
 const WindowIterator = require('./windowIterator');
+const SessionWindowIterator = require('./sessionWindowIterator');
 
 
 
@@ -46,6 +47,20 @@ function toSlidingWindows(sourceArray, timestampSelector, windowDuration, every,
  */
 function toTumblingWindows(sourceArray, timestampSelector, windowDuration, start, end) {
     return toSlidingWindows(sourceArray, timestampSelector, windowDuration, windowDuration, start, end);
+}
+
+function toSessionWindows(sourceArray, timestampSelector, idleThreshold) {
+    if (!Array.isArray(sourceArray)) {
+        throw new TypeError('sourceArray must be an Array instance');
+    }
+    if (typeof timestampSelector !== 'function') {
+        throw new TypeError(timestampSelector + ' is not a function');
+    }
+    if (idleThreshold == null || !Number.isInteger(idleThreshold)) {
+        throw new TypeError('The "idleThreshold" argument must be an integer representing a duration in milliseconds.');
+    }
+
+    return new SessionWindowIterator(sourceArray, timestampSelector, idleThreshold);
 }
 
 /**
@@ -160,7 +175,8 @@ function removeFirstItems(arr, count) {
 
 module.exports = {
     toSlidingWindows: toSlidingWindows,
-    toTumbliningWindows: toTumblingWindows,
+    toTumblingWindows: toTumblingWindows,
+    toSessionWindows: toSessionWindows,
     addToOrdered: addToOrdered,
     addToOrderedAndEvictOldest: addToOrderedAndEvictOldest,
     addToOrderedAndEvictBefore: addToOrderedAndEvictBefore,
