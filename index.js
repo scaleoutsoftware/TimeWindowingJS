@@ -1,6 +1,5 @@
 'use strict';
-const WindowIterator = require('./windowIterator');
-const SessionWindowIterator = require('./sessionWindowIterator');
+const TimeWindow = require('./timeWindow');
 
 
 
@@ -13,14 +12,14 @@ const SessionWindowIterator = require('./sessionWindowIterator');
  */
 
 /**
- * Transforms an ordered array into an iterable collection of sliding windows. The source array must be sorted chronologically.
+ * Transforms an ordered array into an array sliding windows. The source array must be sorted chronologically.
  * @param {Array} sourceArray - Array of time-ordered elements to transform.
  * @param {timestampSelector} timestampSelector - Function to extract a timestamp from elements in the source array.
  * @param {number} windowDuration - Duration of each time window in milliseconds. This is a maximum value that will be shortened for the last window(s) in the returned sequence.
  * @param {number} every - The period of time, in milliseconds, between the start of each sliding window.
  * @param {number} start - Start time (inclusive) of the first sliding window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's first element will be used.
  * @param {number} end - End time (exclusive) for the last sliding window(s), expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's last element will be used, and the last window's end time will be inclusive.
- * @returns {WindowIterator} An iterable collection of TimeWindow instances.
+ * @returns {TimeWindow[]} An array of TimeWindow instances.
  */
 function toSlidingWindows(sourceArray, timestampSelector, windowDuration, every, start, end) {
     if (!Array.isArray(sourceArray)) {
@@ -32,18 +31,108 @@ function toSlidingWindows(sourceArray, timestampSelector, windowDuration, every,
     if (every == null || !Number.isInteger(every)) {
         throw new TypeError('The "every" argument must be an integer representing a duration in milliseconds.');
     }
+    if (sourceArray.length === 0) {
+        return [];
+    }
 
-    return new WindowIterator(sourceArray, timestampSelector, windowDuration, every, start, end);
+    // Automatically deduce start/end times if none are provided:
+    if (start == null) {
+        start = timestampSelector(sourceArray[0]);
+    }
+
+    let autoEndTime = false;
+    if (end == null) {
+        // Look at the last item's timestamp and use it as the 
+        // end time for this transform (we also make the end date inclusive for the
+        // final window(s)--otherwise the last item wouldn't be included).
+        end = timestampSelector(sourceArray[sourceArray.length -1]);
+        autoEndTime = true;
+    }
+    if (!Number.isInteger(start) || !Number.isInteger(end)) {
+        throw new TypeError('start and end time arguments must be integers (typically milliseconds elapsed since January 1, 1970 00:00:00 UTC.');
+    }
+    if (start > end) {
+        throw new TypeError('start time occurs after end time.');
+    }
+
+    // create (empty) windows
+    const windows = [];
+    let winStart = start;
+    while (winStart < end)
+    {
+        let actualDur = windowDuration;
+        if ((winStart + windowDuration) > end) {
+            actualDur = end - winStart;
+        }
+
+        const isLastWindow = ((winStart + every) < end) ? false : true;
+
+        let isEndInclusive = false;
+        if (autoEndTime && isLastWindow) {
+            // this window bumps up agains the final endDate, and the user is letting
+            // the algorithm automatically pick the end time. In this
+            // scenario, we make the end time of the final window inclusive.
+            isEndInclusive = true;
+        }
+
+        // Leaving the TimeWindow's sourceIndex & length members undefined here--will populate them
+        // in the next loop that does a pass through the sourceArray.
+        windows.push(new TimeWindow(sourceArray, winStart, winStart + actualDur, isEndInclusive));
+        winStart += every;
+    }
+
+    // calculate each Window's offset and length in the source array. We memoize
+    // the prior window's starting point so we don't have to traverse the entire
+    // array to find each window's starting point.
+    let startingIndexMemo = 0;
+    
+    for (const win of windows) {
+        let foundStart = false;
+        for (let i = startingIndexMemo; i < sourceArray.length; i++) {
+            const timestamp = timestampSelector(sourceArray[i]);
+            
+            if (!foundStart) {
+                win.sourceIndex = i;
+                if (timestamp < win.start) {
+                    continue; // keep looking for a start index in the source array.
+                }
+                else
+                {
+                    // We found the starting index for the window.
+                    foundStart = true;
+                    startingIndexMemo = i;
+                }
+            }
+
+            if ((win.isEndInclusive && timestamp > win.end) ||
+               (!win.isEndInclusive && timestamp >= win.end)) {
+                // Element is outside of the window's end time. Close it out and move on to
+                // the next window.
+                win.length = (i - win.sourceIndex);
+                break;
+            }
+
+            if (i === (sourceArray.length - 1)) {
+                // Last element in the source array. Close out the window.
+                win.length = (sourceArray.length - win.sourceIndex);
+                break;
+            }
+
+        }
+    }
+    
+
+    return windows;
 }
 
 /**
- * Transforms an ordered array into an iterable collection of non-overlapped, fixed-time windows. The source array must be sorted chronologically.
+ * Transforms an ordered array into an array of non-overlapped, fixed-time windows. The source array must be sorted chronologically.
  * @param {Array} sourceArray - Array of time-ordered elements to transform.
  * @param {timestampSelector} timestampSelector - Function to extract a timestamp from elements in the source array.
  * @param {number} windowDuration - Duration of each time window in milliseconds. This is a maximum value that may be shortened for the last window in the returned sequence.
  * @param {number} start - Start time (inclusive) of the first sliding window, expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's first element will be used.
  * @param {number} end - End time (exclusive) for the last sliding window(s), expressed as milliseconds elapsed since January 1, 1970 00:00:00 UTC. If undefined, the timestamp of the array's last element will be used, and the last window's end time will be inclusive.
- * @returns {WindowIterator} An iterable collection of TimeWindow instances.
+ * @returns {TimeWindow[]} An array of TimeWindow instances.
  */
 function toTumblingWindows(sourceArray, timestampSelector, windowDuration, start, end) {
     return toSlidingWindows(sourceArray, timestampSelector, windowDuration, windowDuration, start, end);
@@ -59,8 +148,34 @@ function toSessionWindows(sourceArray, timestampSelector, idleThreshold) {
     if (idleThreshold == null || !Number.isInteger(idleThreshold)) {
         throw new TypeError('The "idleThreshold" argument must be an integer representing a duration in milliseconds.');
     }
+    if (sourceArray.length === 0) {
+        return [];
+    }
+    const windows = [];
+    const firstTimestamp = timestampSelector(sourceArray[0]);
+    let currentWindowStartTime = firstTimestamp;
+    let currentWindowEndTime = firstTimestamp;
+    let currentWindowStartIndex = 0;
 
-    return new SessionWindowIterator(sourceArray, timestampSelector, idleThreshold);
+    for (let i = 1; i < sourceArray.length; i++) {
+        const elem = sourceArray[i];
+        const timestamp = timestampSelector(elem);
+            
+        if (timestamp - currentWindowEndTime > idleThreshold) {
+            // idle threshold exceeded; yield current window and create new one.
+            windows.push(new TimeWindow(sourceArray, currentWindowStartTime, currentWindowEndTime, true, currentWindowStartIndex, i - currentWindowStartIndex));
+            currentWindowStartTime = currentWindowEndTime = timestamp;
+            currentWindowStartIndex = i;
+        }
+        else {
+            currentWindowEndTime = timestamp;
+        }
+    }
+
+    // close out the last window.
+    windows.push(new TimeWindow(sourceArray, currentWindowStartTime, currentWindowEndTime, true, currentWindowStartIndex, sourceArray.length - currentWindowStartIndex));
+
+    return windows;
 }
 
 /**

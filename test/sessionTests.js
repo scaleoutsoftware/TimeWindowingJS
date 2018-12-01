@@ -5,83 +5,44 @@ const tw = require('../index');
 describe('Session Window Tests', function() {
 
     it('simple session', function() {
-        const start = new Date(2018, 0, 1);
-        const end = new Date(2018, 0, 5);
-        const oneDay = 24 * 60 * 60 * 1000; //in millis
+        const oneHour = 60 * 60 * 1000; //in millis
 
-        /* First 5 days in January.
-        * Assuming 2-day tumbling transform over Jan [1,5):
-        * 
-        * [-)      1,2
-        *   [-)    3,4
-        * |||||    
-        * 12345
-        **/
-        const arr = [];
-        for (let i = 1; i <= 5; i++) {
-            const elem = new MyEvent(i, new Date(2018, 0, i));
-            arr.push(elem);
-        }
+        const events = createTestSessions(5);
 
-        const res = tw.toTumblingWindows(
-            arr, 
+        // Break into sessions , where a session completes after one 
+        // hour of inactivity.
+        const res = tw.toSessionWindows(
+            events, 
             (e) => e.timestamp.valueOf(), 
-            2 * oneDay,
-            start.valueOf(), 
-            end.valueOf()).toArray();
+            oneHour);
 
-        assert.strictEqual(2, res.length);
-
-        const first = res[0].toArray();
-        assert.strictEqual(2, first.length);
-        assert.strictEqual(first[0].payload, 1);
-        assert.strictEqual(first[1].payload, 2);
-        const second = res[1].toArray();
-        assert.strictEqual(2, second.length);
-        assert.strictEqual(second[0].payload, 3);
-        assert.strictEqual(second[1].payload, 4);
+        assert.strictEqual(5, res.length);
+        const lastSession = res[4].toArray(); // payload: [0..24]
+        assert.strictEqual(lastSession[0].payload, 20);
+        assert.strictEqual(lastSession[4].payload, 24);
 
     });
 
-    it('default start and end', function() {
-        const oneDay = 24 * 60 * 60 * 1000; //in millis
-
-        /* First 5 days in January.
-        * Assuming 2-day tumbling transform over Jan [1,5]:
-        * 
-        * [-)      1,2
-        *   [-]    3,4,5
-        * |||||    
-        * 12345
-        **/
-        const arr = [];
-        for (let i = 1; i <= 5; i++) {
-            const elem = new MyEvent(i, new Date(2018, 0, i));
-            arr.push(elem);
-        }
-
-        const res = tw.toTumblingWindows(
-            arr, 
-            (e) => e.timestamp.valueOf(), 
-            2 * oneDay)
-            .toArray();
-
-        assert.strictEqual(2, res.length);
-
-        const first = res[0].toArray();
-        assert.strictEqual(2, first.length);
-        assert.strictEqual(first[0].payload, 1);
-        assert.strictEqual(first[1].payload, 2);
-        const second = res[1].toArray();
-        assert.strictEqual(3, second.length);
-        assert.strictEqual(second[0].payload, 3);
-        assert.strictEqual(second[1].payload, 4);
-        assert.strictEqual(second[2].payload, 5);
-
-    });
+    
 
 });
 
+
+function createTestSessions(count) {
+    const arr = [];
+
+    let payloadId = 0;
+    // simulate session of 5 minutes of daily activity for {count} days.
+    for (let day = 1; day <= count; day++) {
+        for (let min = 0; min < 5; min++) {
+            const elem = new MyEvent(payloadId, new Date(2018, 0, day, 12, min, 0));
+            arr.push(elem);
+            payloadId++;
+        }
+    }
+
+    return arr;
+}
 
 class MyEvent {
     constructor(payload, timestamp) {

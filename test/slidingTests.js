@@ -27,7 +27,7 @@ describe('Sliding Window Tests', function() {
             arr.push(elem);
         }
 
-        const slidingWindows = tw.toSlidingWindows(
+        const res = tw.toSlidingWindows(
             arr, 
             (e) => e.timestamp.valueOf(), 
             2 * oneDay,
@@ -35,7 +35,6 @@ describe('Sliding Window Tests', function() {
             start.valueOf(), 
             end.valueOf());
 
-        const res = slidingWindows.toArray();
         assert.strictEqual(4, res.length);
 
         const first = res[0].toArray();
@@ -66,13 +65,12 @@ describe('Sliding Window Tests', function() {
             arr.push(elem);
         }
 
-        const slidingWindows = tw.toSlidingWindows(
+        const res = tw.toSlidingWindows(
             arr, 
             (e) => e.timestamp.valueOf(), 
             2 * oneDay,
             oneDay);
 
-        const res = slidingWindows.toArray();
         assert.strictEqual(4, res.length);
 
         const first = res[0].toArray();
@@ -105,13 +103,12 @@ describe('Sliding Window Tests', function() {
             arr.push(elem);
         }
 
-        const slidingWindows = tw.toSlidingWindows(
+        const res = tw.toSlidingWindows(
             arr, 
             (e) => e.timestamp.valueOf(), 
             2 * oneDay,
             oneDay);
 
-        const res = slidingWindows.toArray();
         assert.strictEqual(4, res.length);
 
         const avg = math.mean(res[0].map(element => element.payload));
@@ -139,13 +136,12 @@ describe('Sliding Window Tests', function() {
             arr.push(elem);
         }
 
-        const slidingWindows = tw.toSlidingWindows(
+        const res = tw.toSlidingWindows(
             arr, 
             (e) => e.timestamp.valueOf(), 
             2 * oneDay,
             oneDay);
 
-        const res = slidingWindows.toArray();
         assert.strictEqual(4, res.length);
 
         const filtered = res[2].filter(element => element.payload > 3);
@@ -174,13 +170,12 @@ describe('Sliding Window Tests', function() {
             arr.push(elem);
         }
 
-        const slidingWindows = tw.toSlidingWindows(
+        const res = tw.toSlidingWindows(
             arr, 
             (e) => e.timestamp.valueOf(), 
             2 * oneDay,
             oneDay);
 
-        const res = slidingWindows.toArray();
         assert.strictEqual(4, res.length);
 
         const reduced = res[3].reduce((accumulator, element) => element.payload + accumulator, 0);
@@ -208,13 +203,12 @@ describe('Sliding Window Tests', function() {
             arr.push(elem);
         }
 
-        const slidingWindows = tw.toSlidingWindows(
+        const res = tw.toSlidingWindows(
             arr, 
             (e) => e.timestamp.valueOf(), 
             2 * oneDay,
             oneDay);
 
-        const res = slidingWindows.toArray();
         assert.strictEqual(4, res.length);
 
         // Where res[3]'s payloads are [4,5]
@@ -225,6 +219,41 @@ describe('Sliding Window Tests', function() {
 
         const someMoreThanFour = res[3].some(element => element.payload > 4);
         assert.strictEqual(true, someMoreThanFour);
+    });
+
+    it('empty window', function() {
+        const oneDay = 24 * 60 * 60 * 1000; //in millis
+
+        /* First 5 days in January.
+        * Assuming sliding transform over Jan [1,5)
+        *    with period of 1 day and duration of 2 days:
+        * 
+        * x   x
+        * [-)     1
+        *  [-)    {empty}
+        *   [-)   {empty}
+        *    []   {5}
+        * |||||    
+        * 12345
+        **/
+        const arr = [];
+        arr.push(new MyEvent(1, new Date(2018, 0, 1)));
+        arr.push(new MyEvent(5, new Date(2018, 0, 5)));
+
+        const res = tw.toSlidingWindows(
+            arr, 
+            (e) => e.timestamp.valueOf(), 
+            2 * oneDay,
+            oneDay);
+
+        assert.strictEqual(res.length, 4);
+        assert.strictEqual(res[0].length, 1);
+        assert.strictEqual(res[1].length, 0);
+        assert.strictEqual(res[2].length, 0);
+        assert.strictEqual(res[3].length, 1);
+
+        assert.strictEqual(res[0].toArray()[0].payload, 1);
+        assert.strictEqual(res[3].toArray()[0].payload, 5);
     });
 
 });
