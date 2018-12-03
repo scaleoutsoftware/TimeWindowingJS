@@ -12,7 +12,7 @@ const TimeWindow = require('./timeWindow');
  */
 
 /**
- * Transforms an ordered array into an array sliding windows. The source array must be sorted chronologically.
+ * Transforms an ordered array into an array of sliding windows. The source array must be sorted chronologically.
  * @param {Array} sourceArray - Array of time-ordered elements to transform.
  * @param {timestampSelector} timestampSelector - Function to extract a timestamp from elements in the source array.
  * @param {number} windowDuration - Duration of each time window in milliseconds. This is a maximum value that will be shortened for the last window(s) in the returned sequence.
@@ -138,6 +138,13 @@ function toTumblingWindows(sourceArray, timestampSelector, windowDuration, start
     return toSlidingWindows(sourceArray, timestampSelector, windowDuration, windowDuration, start, end);
 }
 
+/**
+ * Transforms an ordered array into an array of session windows. The source array must be sorted chronologically.
+ * @param {Array} sourceArray - Array of time-ordered elements to transform.
+ * @param {timestampSelector} timestampSelector - Function to extract a timestamp from elements in the source array.
+ * @param {number} idleThreshold - max allowed time gap between elements before a new session is started, in milliseconds.
+ * @returns {TimeWindow[]} An array of TimeWindow instances.
+ */
 function toSessionWindows(sourceArray, timestampSelector, idleThreshold) {
     if (!Array.isArray(sourceArray)) {
         throw new TypeError('sourceArray must be an Array instance');
