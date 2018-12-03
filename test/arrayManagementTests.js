@@ -90,6 +90,46 @@ describe('Array Management Tests', function() {
         assert(arr[0].payload === 3);
     });
 
+    it('Evict old session', function() {
+        const MAX_SESSION_COUNT = 2;
+        const IDLE_THRESHHOLD = 10 * 60 * 1000; // 10 minutes
+
+        // source array of date elements:
+        const arr = [];
+        const timestampSelector = elem => elem.valueOf();
+
+        // add two sessions worth of data.
+        for (let sec = 0; sec < 7; sec++) {
+            tw.addToOrderedAndEvictSessions(arr, 
+                MAX_SESSION_COUNT, 
+                timestampSelector, 
+                IDLE_THRESHHOLD,
+                new Date(2018, 1, 1, 13, 45, sec)); // 1:45:00p - 1:45:06p
+        }
+        for (let sec = 0; sec < 11; sec++) {
+            tw.addToOrderedAndEvictSessions(arr, 
+                MAX_SESSION_COUNT, 
+                timestampSelector, 
+                IDLE_THRESHHOLD,
+                new Date(2018, 1, 1, 14, 30, sec)); // 2:30:00pm - 2:30:10pm
+        }
+
+        // Start a third session that should trigger eviction of the first.
+        tw.addToOrderedAndEvictSessions(arr, 
+            MAX_SESSION_COUNT, 
+            timestampSelector, 
+            IDLE_THRESHHOLD,
+            new Date(2018, 1, 1, 15, 30, 0)); // 3:30:00pm
+
+        assert.strictEqual(arr.length, 12);
+        const sessions = tw.toSessionWindows(arr, timestampSelector, IDLE_THRESHHOLD);
+        assert.strictEqual(sessions.length, 2);
+
+        const firstWindow = sessions[0].toArray();
+        assert.deepEqual(firstWindow[0], new Date(2018, 1, 1, 14, 30, 0)); // 2:30:00pm
+
+    });
+
 });
 
 

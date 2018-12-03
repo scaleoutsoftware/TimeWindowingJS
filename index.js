@@ -145,8 +145,8 @@ function toSessionWindows(sourceArray, timestampSelector, idleThreshold) {
     if (typeof timestampSelector !== 'function') {
         throw new TypeError(timestampSelector + ' is not a function');
     }
-    if (idleThreshold == null || !Number.isInteger(idleThreshold)) {
-        throw new TypeError('The "idleThreshold" argument must be an integer representing a duration in milliseconds.');
+    if (!Number.isInteger(idleThreshold) || idleThreshold <= 0) {
+        throw new TypeError('The "idleThreshold" argument must be a positive integer representing a duration in milliseconds.');
     }
     if (sourceArray.length === 0) {
         return [];
@@ -162,7 +162,7 @@ function toSessionWindows(sourceArray, timestampSelector, idleThreshold) {
         const timestamp = timestampSelector(elem);
             
         if (timestamp - currentWindowEndTime > idleThreshold) {
-            // idle threshold exceeded; yield current window and create new one.
+            // idle threshold exceeded; close out current window and create a new one for this element.
             windows.push(new TimeWindow(sourceArray, currentWindowStartTime, currentWindowEndTime, true, currentWindowStartIndex, i - currentWindowStartIndex));
             currentWindowStartTime = currentWindowEndTime = timestamp;
             currentWindowStartIndex = i;
@@ -258,6 +258,33 @@ function addToOrderedAndEvictBefore(arr, startTime, timestampSelector, ...values
 }
 
 /**
+ * Adds one or more elements to a time-ordered array of items, inserting them in chronological order. If
+ * the number of sessions in the destination array exceeds the supplied maxSessionCount argument, elements 
+ * in theoldest session(s) in the destination array will be evicted.
+ * @param {Array} arr - destination array for new element(s).
+ * @param {number} maxSessionCount - max allowed number of sessions.
+ * @param {timestampSelector} timestampSelector - function to extract a timestamp from an element.
+ * @param {number} idleThreshold - max allowed time gap between elements before a new session is started, in milliseconds.
+ * @param {...any} values - value(s) to add to the array.
+ */
+function addToOrderedAndEvictSessions(arr, maxSessionCount, timestampSelector, idleThreshold, ...values) {
+    if (!Number.isInteger(maxSessionCount) || maxSessionCount < 1) {
+        throw new RangeError('maxSessionCount must be a positive integer.');
+    }
+    if (!Number.isInteger(idleThreshold) || idleThreshold <= 0) {
+        throw new TypeError('The "idleThreshold" argument must be a positive integer representing a duration in milliseconds.');
+    }
+
+    addToOrdered(arr, timestampSelector, ...values);
+    const sessions = toSessionWindows(arr, timestampSelector, idleThreshold);
+    const sessionRemoveCount = sessions.length - maxSessionCount;
+    if (sessionRemoveCount > 0) {
+        const removeCount = sessions[sessionRemoveCount].sourceIndex;
+        removeFirstItems(arr, removeCount);
+    }
+}
+
+/**
  * Perform in-place removal of the first N elements in an array.
  * @param {Array} arr - array to be modified.
  * @param {number} count - Number of elements to remove from the front of the array.
@@ -295,5 +322,6 @@ module.exports = {
     addToOrdered: addToOrdered,
     addToOrderedAndEvictOldest: addToOrderedAndEvictOldest,
     addToOrderedAndEvictBefore: addToOrderedAndEvictBefore,
+    addToOrderedAndEvictSessions: addToOrderedAndEvictSessions,
     removeFirstItems: removeFirstItems
 };
