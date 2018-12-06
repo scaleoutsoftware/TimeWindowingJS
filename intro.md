@@ -5,31 +5,61 @@
 The ScaleOut Time Windowing Library for Javascript provides a set of
 windowing functions for time-ordered arrays of events.
 
+### Installation
+
+`npm install time-windowing`
+
 ### Example
 
-    using Scaleout.Streaming.TimeWindowing.Linq;
-	
-    class HeartRate {
-		public DateTime Timestamp { get; set; } // assumes UTC
-		public short BeatsPerMinute { get; set; }
-	}
-
+    'use strict';
+    const tw = require('time-windowing');
+    
+    const ONE_DAY = 24 * 60 * 60 * 1000; // milliseconds
+    const ONE_MINUTE = 60 * 1000;        // milliseconds
+    
+    // State object to be stored and analyzed
+    class HeartRateReading {
+        constructor(timestamp) {
+            this.beatsPerMinute = HeartRateReading.createRandomHeartRate();
+            this.timestamp = timestamp; 
+        }
+    
+        static createRandomHeartRate() {
+            return Math.floor(Math.random() * (90 - 60 + 1)) + 60;
+        }
+    }
+    
+    // Generate (simulated) time-ordered array of HeartRate readings, one per minute:
+    const readings = [];
+    for (let timestamp = Date.now() - ONE_DAY; timestamp < Date.now(); timestamp += ONE_MINUTE) {
+        tw.addToOrdered(readings, r => r.timestamp, new HeartRateReading(timestamp));
+    }
+    
     // Given heart-rate readings every minute, calculate the 5-minute
-	// moving average of a person's heart rate for the past 24 hours.
-	
-	var readings = new List<HeartRate>();
-	// [...time-ordered readings populated here, one per minute]
-	
-    var slidingWindows = readings.ToSlidingWindows(
-            timestampSelector: hb => hb.Timestamp,
-            startTime: DateTime.UtcNow - TimeSpan.FromHours(24),
-            endTime: DateTime.UtcNow,
-            windowDuration: TimeSpan.FromMinutes(5),
-            every: TimeSpan.FromMinutes(1));
+    // moving average of a person's heart rate for the past 24 hours.
+    const slidingWindows = tw.toSlidingWindows(
+        readings,                      // array to transform
+        reading => reading.timestamp,  // how to pull the time out of a HeartRateReading object
+        5 * ONE_MINUTE,                // size (duration) of window: 5 minutes (in millis)
+        ONE_MINUTE,                    // frequency of windows: 1 minute (in millis)
+        Date.now() - ONE_DAY,          // start time of first sliding window.
+        Date.now()                     // end time of last window
+    );
+    
+    // Print each window's boundaries and its heartbeat average:
+    for (const win of slidingWindows) {
+        const sum = win.reduce((total, reading) => total + reading.beatsPerMinute, 0);
+        const avg = sum / win.length;
+    
+        console.log(`${win.startDate.toLocaleTimeString()} - ${win.endDate.toLocaleTimeString()}: ${avg}`);
+    }
+    
+    // Ouput:
+    // 4:54:56 PM - 4:59:56 PM: 76.2
+    // 4:55:56 PM - 5:00:56 PM: 71.6
+    // 4:56:56 PM - 5:01:56 PM: 72.4
+    // ...
 
-	// print each window's boundaries and its heartbeat average:
-    foreach (var win in slidingWindows)
-        Console.WriteLine($"{win.StartTime:t} - {win.EndTime:t}: {win.Average(hb => hb.BeatsPerMinute)}");
 	
 The library also provides functions to manage
 arrays of time-ordered elements. These classes offer automatic
