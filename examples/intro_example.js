@@ -1,3 +1,4 @@
+/*eslint no-console:0*/
 'use strict';
 const tw = require('time-windowing');
 
@@ -42,7 +43,7 @@ for (const win of slidingWindows) {
     console.log(`${win.startDate.toLocaleTimeString()} - ${win.endDate.toLocaleTimeString()}: ${avg}`);
 }
 
-// Ouput:
+// Output:
 // 4:54:56 PM - 4:59:56 PM: 76.2
 // 4:55:56 PM - 5:00:56 PM: 71.6
 // 4:56:56 PM - 5:01:56 PM: 72.4
