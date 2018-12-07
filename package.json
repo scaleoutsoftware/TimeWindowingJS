@@ -7,6 +7,10 @@
     "url": "https://github.com/scaleoutsoftware/TimeWindowingJS"
   },
   "main": "index.js",
+  "files": [
+    "index.js",
+    "timeWindow.js"
+  ],
   "scripts": {
     "test": "mocha"
   },
