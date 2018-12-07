@@ -205,6 +205,10 @@ function addToOrdered(arr, timestampSelector, ...values) {
             throw new Error('timestampSelector returned null/undefined.');
         }
 
+        // We assume that the incoming values are the newest events and will
+        // therefore be inserted at/near the end of the array. So rather than sorting
+        // the entire array every time we do an add, we do a reverse linear search to
+        // find the location. If our assumption holds then performance will be near O(1).
         let insertPosition = arr.length;
         while (insertPosition > 0) {
             if (timestamp < timestampSelector(arr[insertPosition - 1]))
@@ -240,7 +244,7 @@ function addToOrderedAndEvictOldest(arr, maxArraySize, timestampSelector, ...val
 
 /**
  * Adds one or more elements to a time-ordered array of items, inserting them in chronological order. Any
- * elements in the array with timestamp prior to the supplied startTime argument will be evicted from the 
+ * elements in the array with a timestamp prior to the supplied startTime argument will be evicted from the 
  * destination array.
  * @param {Array} arr - destination array for new element(s).
  * @param {Date|number} startTime - start time (inclusive) of the first allowed element in the destination array.
@@ -267,7 +271,7 @@ function addToOrderedAndEvictBefore(arr, startTime, timestampSelector, ...values
 /**
  * Adds one or more elements to a time-ordered array of items, inserting them in chronological order. If
  * the number of sessions in the destination array exceeds the supplied maxSessionCount argument, elements 
- * in theoldest session(s) in the destination array will be evicted.
+ * in the oldest session(s) in the destination array will be evicted.
  * @param {Array} arr - destination array for new element(s).
  * @param {number} maxSessionCount - max allowed number of sessions.
  * @param {timestampSelector} timestampSelector - function to extract a timestamp from an element.
