@@ -1,4 +1,4 @@
-# ScaleOut Time Windowing Library for Javascript
+# ScaleOut Time Windowing Library for JavaScript
 
 ## Introduction
 
@@ -157,6 +157,58 @@ useful for managing an array of events that is often transformed
 to a set of session windows. It is able to maintain a fixed number of
 sessions in the array, trimming the oldest sessions if a new event
 triggers the creation of a new session window.
+
+## TimeWindow Objects
+
+Instead of using an array to represent the elements in a time window,
+the three functions described above return their results in {@link
+TimeWindow} objects. A TimeWindow instance does not contain a copy of
+the elements it contains--rather, it is an efficient [iterator]{@link
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators}
+over the slice of the source array whose elements fall within the
+window's time range. This approach avoids excessive memory allocation
+and array copies, reducing GC overhead.
+
+The TimeWindow class provides a [toArray()]{@link TimeWindow#toArray}
+method if the elements need to be represented as an array. Use of this
+method may be required when working with libraries that only accept
+arrays, such as [Math.js]{@link http://mathjs.org/}.
+
+To reduce allocations when array usage is unavoidable, the TimeWindow
+class also provides a number of functional methods such as
+[filter]{@link TimeWindow#filter}, [map]{@link TimeWindow#map}, and
+[reduce]{@link TimeWindow#reduce}. These methods work directly on the
+TimeWindow iterator and behave identically to their corollaries on
+a standard JavaScript Array object.
+
+For example, if the Math.js library was used to calculate the average
+of the heart rate readings in the example above, the map method on the
+TimeWindow object could be used to extract values from each element more
+efficiently:
+
+	'use strict';
+    const tw = require('time-windowing');
+	const math = require('mathjs');
+	
+	// [Setup from HeartRateReading example above elided.]
+
+    for (const win of slidingWindows) {
+	
+	    // Extract heart rate from readings from window and calculate average.
+		
+		// BAD: Two array allocations:
+		const winAsArray1 = win.toArray();                      // 1st array allocation
+		const hbArray1 = winAsArray.map(r => r.beatsPerMinute); // 2nd array allocation
+		const avg1 = math.mean(hbArray1);
+		
+		// GOOD: One array allocation:
+		const hbArray2 = win.map(r => r.beatsPerMinute);         // 1st array allocation
+		const avg2 = math.mean(hbArray2);
+    }
+	
+In short, consider using the methods on a TimeWindow object when
+processing its elements. The functional style these methods promote
+can result in more efficient code.
 
 <a name="ArrayManagementFunctions"></a>
 ## Managing Time-ordered Arrays
