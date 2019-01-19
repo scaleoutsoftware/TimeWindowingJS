@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>ScaleOut Time Windowing Library for JavaScript</h1><h2>Introduction</h2><p>The ScaleOut Time Windowing Library for JavaScript provides a set of
+windowing functions for time-ordered arrays of events.</p>
+<h3>Installation</h3><p><code>npm install time-windowing</code></p>
+<h3>Example</h3><pre class="prettyprint source"><code>'use strict';
+const tw = require('time-windowing');
+
+const ONE_DAY = 24 * 60 * 60 * 1000; // milliseconds
+const ONE_MINUTE = 60 * 1000;        // milliseconds
+
+// State object to be stored and analyzed
+class HeartRateReading {
+    constructor(timestamp) {
+        this.beatsPerMinute = HeartRateReading.createRandomHeartRate();
+        this.timestamp = timestamp; 
+    }
+
+    static createRandomHeartRate() {
+        return Math.floor(Math.random() * (90 - 60 + 1)) + 60;
+    }
+}
+
+// Generate (simulated) time-ordered array of HeartRate readings, one per minute:
+const readings = [];
+for (let timestamp = Date.now() - ONE_DAY; timestamp &lt; Date.now(); timestamp += ONE_MINUTE) {
+    tw.addToOrdered(readings, r => r.timestamp, new HeartRateReading(timestamp));
+}
+
+// Given heart-rate readings every minute, calculate the 5-minute
+// moving average of a person's heart rate for the past 24 hours.
+const slidingWindows = tw.toSlidingWindows(
+    readings,                      // array to transform
+    reading => reading.timestamp,  // how to pull the time out of a HeartRateReading object
+    5 * ONE_MINUTE,                // size (duration) of window: 5 minutes (in millis)
+    ONE_MINUTE,                    // frequency of windows: 1 minute (in millis)
+    Date.now() - ONE_DAY,          // start time of first sliding window.
+    Date.now()                     // end time of last window
+);
+
+// Print each window's boundaries and its heartbeat average:
+for (const win of slidingWindows) {
+    const sum = win.reduce((total, reading) => total + reading.beatsPerMinute, 0);
+    const avg = sum / win.length;
+
+    console.log(`${win.startDate.toLocaleTimeString()} - ${win.endDate.toLocaleTimeString()}: ${avg}`);
+}
+
+// Output:
+// 4:54:56 PM - 4:59:56 PM: 76.2
+// 4:55:56 PM - 5:00:56 PM: 71.6
+// 4:56:56 PM - 5:01:56 PM: 72.4
+// ...</code></pre><p>The library also provides functions to manage arrays of time-ordered
+elements, such as the <a href="global.html#addToOrdered">addToOrdered</a> function used in the
+example above. These array management functions offer automatic
+eviction and ordering of elements. See the <a href="#ArrayManagementFunctions">Managing Time-ordered
+Arrays</a> section for details.</p>
+<h2>Windowing Functions</h2><p>Three functions are provided to perform various time-windowing
+transformations on an ordered array:</p>
+<ol>
+<li><strong><a href="global.html#toSlidingWindows">toSlidingWindows</a></strong>: Transforms an array of events into an
+array of overlapped (sliding) windows.</li>
+<li><strong><a href="global.html#toTumblingWindows">toTumblingWindows</a></strong>: Transforms an array of events into
+an array of fixed-duration, non-overlapping windows.</li>
+<li><strong><a href="global.html#toSessionWindows">toSessionWindows</a></strong>: Transforms an array of events into
+an array of session windows.</li>
+</ol>
+<p>Each windowing function returns an array of <a href="TimeWindow.html">TimeWindow</a>
+objects. A TimeWindow instance is itself an iterable collection of
+the elements in the source array whose timestamps fall within the
+window's time span.</p>
+<p>The windowing functions accept a user-defined <a href="global.html#timestampSelector">timestampSelector</a> callback that, given and element in the source
+array, returns its timestamp. This timestamp is used to determine
+which window (or windows, in the case of the sliding windows) an
+element belongs to. The array <em>must</em> be sorted chronologically with
+respect to the returned timestamp.</p>
+<h3>Sliding Windows</h3><p>Sliding window functions are often used to calculate the moving
+average of time series data. The duration of sliding windows is larger
+than the period between the windows, so the period of time covered by
+each window overlaps with its neighbors:</p>
+<p><img src="images/sliding.jpg" alt="sliding windows"></p>
+<p>If no elements fall in a sliding time window, that window will be
+empty.</p>
+<p>To use the library's <a href="global.html#toSlidingWindows">toSlidingWindows</a> function, the source
+array <em>must</em> be sorted chronologically. (See the <a href="#ArrayManagementFunctions">Managing
+Time-ordered Arrays</a> section for details
+about convenience functions that keep your source array sorted.)</p>
+<h3>Tumbling Windows</h3><p>Tumbling windows, (or &quot;fixed&quot; windows), divide time series data into
+periodic, non-overlapping windows. Unlike sliding time windows, an
+element in a collection of tumbling windows may only appear in a
+single window.</p>
+<p>Tumbling windows are implemented in this library as a special case of
+sliding window, whose window duration and frequency are the same
+amount of time.</p>
+<p><img src="images/tumbling.jpg" alt="tumbling windows"></p>
+<p>If no elements fall in a tumbling time window, that window will be
+empty.</p>
+<p>To use the library's <a href="global.html#toTumblingWindows">toTumblingWindows</a> function, the source
+collection <em>must</em> be sorted chronologically. (See the <a href="#ArrayManagementFunctions">Managing
+Time-ordered Arrays</a> section for details
+about convenience functions that keep your source array sorted.)</p>
+<h3>Session Windows</h3><p>The duration of a session window is not fixed; rather, it is
+determined by the time interval between elements: if a period of idle
+time elapses between elements then a new session window is
+created.</p>
+<p>Session windowing is often used when processing click data or
+other types of user activity--if a user is inactive for too long then
+the session window closed. A new session window is created once user
+activity resumes.</p>
+<p>Unlike sliding and tumbling window functions, a session window is
+never empty.</p>
+<p><img src="images/session.jpg" alt="session windows"></p>
+<p>Like the other windowing functions, the <a href="global.html#toSessionWindows">toSessionWindows</a>
+function requires the source array collection to be sorted
+chronologically. (See the <a href="#ArrayManagementFunctions">Managing Time-ordered
+Arrays</a> section for details about
+convenience functions that keep your source array sorted.)</p>
+<p>The <a href="global.html#addToOrderedAndEvictSessions">addToOrderedAndEvictSessions</a> function, in particular, is
+useful for managing an array of events that is often transformed
+to a set of session windows. It is able to maintain a fixed number of
+sessions in the array, trimming the oldest sessions if a new event
+triggers the creation of a new session window.</p>
+<h2>TimeWindow Objects</h2><p>Instead of using an array to represent the elements in a time window,
+the three functions described above return their results in <a href="TimeWindow.html">TimeWindow</a> objects. A TimeWindow instance does not contain a copy of
+the elements it contains--rather, it is an efficient <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators">iterator</a>
+over the slice of the source array whose elements fall within the
+window's time range. This approach avoids excessive memory allocation
+and array copies, reducing GC overhead.</p>
+<p>The TimeWindow class provides a <a href="TimeWindow.html#toArray">toArray()</a>
+method if the elements need to be represented as an array. Use of this
+method may be required when working with libraries that only accept
+arrays, such as <a href="http://mathjs.org/">Math.js</a>.</p>
+<p>To reduce allocations when array usage is unavoidable, the TimeWindow
+class also provides a number of functional methods such as
+<a href="TimeWindow.html#filter">filter</a>, <a href="TimeWindow.html#map">map</a>, and
+<a href="TimeWindow.html#reduce">reduce</a>. These methods work directly on the
+TimeWindow iterator and behave identically to their corollaries on
+a standard JavaScript Array object.</p>
+<p>For example, if the Math.js library was used to calculate the average
+of the heart rate readings in the example above, the map method on the
+TimeWindow object could be used to extract values from each element more
+efficiently:</p>
+<pre class="prettyprint source"><code>'use strict';
+const tw = require('time-windowing');
+const math = require('mathjs');
+
+// [Setup from HeartRateReading example above elided.]
+
+for (const win of slidingWindows) {
+
+    // Extract heart rate from readings from window and calculate average.
+
+    // BAD: Two array allocations:
+    const winAsArray1 = win.toArray();                      // 1st array allocation
+    const hbArray1 = winAsArray.map(r => r.beatsPerMinute); // 2nd array allocation
+    const avg1 = math.mean(hbArray1);
+
+    // GOOD: One array allocation:
+    const hbArray2 = win.map(r => r.beatsPerMinute);         // 1st array allocation
+    const avg2 = math.mean(hbArray2);
+}</code></pre><p>In short, consider using the methods on a TimeWindow object when
+processing its elements. The functional style these methods promote
+can result in more efficient code.</p>
+<p><a name="ArrayManagementFunctions"></a></p>
+<h2>Managing Time-ordered Arrays</h2><p>In addition to the three windowing functions detailed above, the
+library provides three convenience functions to aid in the management
+and processing of time-ordered events. These wrappers perform the
+following work on your behalf:</p>
+<ol>
+<li><strong><a href="global.html#addToOrdered">addToOrdered</a></strong>: Adds one or more elements to a
+time-ordered array of items, inserting them in chronological order.</li>
+<li><strong><a href="global.html#addToOrderedAndEvictOldest">addToOrderedAndEvictOldest</a></strong>: Adds one or more elements
+and then removes the oldest element(s) if the resulting size of the
+destination array exceeds the supplied maxArraySize argument.</li>
+<li><strong><a href="global.html#addToOrderedAndEvictBefore">addToOrderedAndEvictBefore</a></strong>: Adds one or more elements
+and then evicts any elements in the array whose timestamp is prior
+to the supplied startTime argument.</li>
+<li><strong><a href="global.html#addToOrderedAndEvictSessions">addToOrderedAndEvictSessions</a></strong>: Adds one or more
+elements, and, if the number of sessions in the destination array
+exceeds the supplied maxSessionCount argument, evicts elements in
+the oldest session(s) in the destination array will be evicted.</li>
+</ol></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="TimeWindow.html">TimeWindow</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addToOrdered">addToOrdered</a></li><li><a href="global.html#addToOrderedAndEvictBefore">addToOrderedAndEvictBefore</a></li><li><a href="global.html#addToOrderedAndEvictOldest">addToOrderedAndEvictOldest</a></li><li><a href="global.html#addToOrderedAndEvictSessions">addToOrderedAndEvictSessions</a></li><li><a href="global.html#removeFirstItems">removeFirstItems</a></li><li><a href="global.html#toSessionWindows">toSessionWindows</a></li><li><a href="global.html#toSlidingWindows">toSlidingWindows</a></li><li><a href="global.html#toTumblingWindows">toTumblingWindows</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Fri Jan 18 2019 17:57:40 GMT-0800 (Pacific Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
