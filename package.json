@@ -16,11 +16,12 @@
   },
   "keywords": [
     "window",
+    "windowing",
     "sliding",
     "tumbling",
     "session"
   ],
-  "author": "scaleoutsoftware",
+  "author": "ScaleOut Software, Inc.",
   "license": "Apache-2.0",
   "dependencies": {},
   "devDependencies": {
